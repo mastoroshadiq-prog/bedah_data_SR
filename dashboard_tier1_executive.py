@@ -356,6 +356,151 @@ if selected_year == 'All Years' and selected_estate == 'All':
         if st.button("❌ Clear Selection", use_container_width=True):
             st.session_state.selected_detail_year = None
     
+    # ESTATE BREAKDOWN EXPANDER (NO DIALOG - USING EXPANDER FOR RELIABILITY)
+    if st.session_state.selected_detail_year is not None:
+        selected_yr = st.session_state.selected_detail_year
+        
+        with st.expander(f"📍 **Estate Breakdown for Year {selected_yr}**", expanded=True):
+            # Calculate estate breakdown for selected year
+            df_selected_year = df[df['year'] == selected_yr]
+            
+            estate_breakdown = []
+            estate_colors = {
+                'AME': '#dc2626',
+                'OLE': '#ea580c', 
+                'DBE': '#f59e0b'
+            }
+            
+            for estate_code in ['AME', 'OLE', 'DBE']:
+                df_estate = df_selected_year[df_selected_year['estate'] == estate_code]
+                
+                if len(df_estate) > 0:
+                    estate_gap = df_estate['gap_ton'].sum()
+                    estate_loss = abs(estate_gap) * cpo_price if estate_gap < 0 else 0
+                    estate_blocks = len(df_estate)
+                    estate_gap_pct = df_estate['gap_pct_ton'].mean()  # Use gap_pct_ton
+                    
+                    estate_breakdown.append({
+                        'estate': estate_code,
+                        'loss': estate_loss / 1_000_000_000,  # Convert to Milyar (billions)
+                        'blocks': estate_blocks,
+                        'gap_pct': estate_gap_pct,  # Percentage gap
+                        'gap_ton': abs(estate_gap),  # Absolute gap in tons
+                        'color': estate_colors[estate_code]
+                    })
+            
+            # Sort by loss descending
+            estate_breakdown = sorted(estate_breakdown, key=lambda x: x['loss'], reverse=True)
+            
+            # BAR CHART - Estate Loss Comparison
+            st.markdown(f"### Estate Loss Breakdown - Year {selected_yr}")
+            
+            fig_estate = go.Figure()
+            
+            for item in estate_breakdown:
+                fig_estate.add_trace(go.Bar(
+                    y=[item['estate']],
+                    x=[item['loss']],
+                    orientation='h',
+                    name=item['estate'],
+                    text=[f"Rp {item['loss']:.1f} M"],
+                    textposition='auto',
+                    marker=dict(
+                        color=item['color'],
+                        line=dict(color='rgba(255,255,255,0.5)', width=2)
+                    ),
+                    hovertemplate='<b>%{y}</b><br>Loss: Rp %{x:.2f}M<extra></extra>'
+                ))
+            
+            fig_estate.update_layout(
+                showlegend=False,
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='white', size=14),
+                xaxis=dict(
+                    title="Loss (Rp Milyar = Billion)",
+                    gridcolor='rgba(255,255,255,0.1)',
+                    showgrid=True
+                ),
+                yaxis=dict(
+                    title="",
+                    showgrid=False
+                ),
+                height=250,
+                margin=dict(l=80, r=20, t=20, b=60)
+            )
+            
+            st.plotly_chart(fig_estate, use_container_width=True)
+            
+            # DETAILED METRICS - 3 cards
+            st.markdown("---")
+            st.markdown("### 📊 Detailed Metrics")
+            
+            cols = st.columns(3)
+            for idx, item in enumerate(estate_breakdown):
+                with cols[idx]:
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%);
+                                padding: 20px; border-radius: 10px; border-left: 4px solid {item['color']};
+                                box-shadow: 0 4px 10px rgba(0,0,0,0.3);'>
+                        <h3 style='color: {item['color']}; margin: 0 0 15px 0; text-align: center; font-size: 1.5em;'>{item['estate']}</h3>
+                        <p style='color: white; font-size: 1.8em; font-weight: 700; margin: 0; text-align: center;'>
+                            Rp {item['loss']:.1f} M
+                        </p>
+                        <p style='color: #9ca3af; font-size: 0.85em; text-align: center; margin: 5px 0 15px 0;'>
+                            (Milyar Rupiah)
+                        </p>
+                        <hr style='border-color: rgba(255,255,255,0.2); margin: 15px 0;'>
+                        <p style='color: #e5e7eb; font-size: 0.95em; margin: 5px 0;' 
+                           title='Number of plantation blocks in this estate'>
+                            📦 <b>Total Blocks:</b> {item['blocks']}
+                        </p>
+                        <p style='color: #e5e7eb; font-size: 0.95em; margin: 5px 0;' 
+                           title='Average production gap percentage per block. Negative means underperformance vs target. Formula: ((Actual - Target) / Target) × 100'>
+                            📉 <b>Avg Gap %:</b> {item['gap_pct']:.1f}%
+                        </p>
+                        <p style='color: #fbbf24; font-size: 0.95em; margin: 5px 0;' 
+                           title='Total production shortfall in tons (sum of all blocks). This is the actual tonnage difference between target and actual production.'>
+                            ⚠️ <b>Production Shortfall:</b> {item['gap_ton']:,.0f} Ton
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            # GANODERMA SECTION - Only for 2025
+            if selected_yr == 2025:
+                st.markdown("---")
+                st.markdown("### 🦠 Ganoderma Attack Rate")
+                st.markdown("<p style='color: #9ca3af; font-size: 0.9em;'>📊 Based on 2025 field survey data</p>", unsafe_allow_html=True)
+                
+                # Calculate ganoderma per estate for 2025
+                gano_estate_cards = []
+                for estate_code in ['AME', 'OLE', 'DBE']:
+                    df_estate_blocks = df_selected_year[df_selected_year['estate'] == estate_code]
+                    block_ids = df_estate_blocks['block_id'].unique()
+                    df_gano_estate = df_gano[df_gano['block_id'].isin(block_ids)]
+                    
+                    if len(df_gano_estate) > 0:
+                        avg_gano = df_gano_estate['pct_serangan'].mean() * 100
+                    else:
+                        avg_gano = 0
+                    
+                    gano_estate_cards.append({
+                        'estate': estate_code,
+                        'rate': avg_gano,
+                        'color': estate_colors[estate_code]
+                    })
+                
+                col_g1, col_g2, col_g3 = st.columns(3)
+                for idx, gano_item in enumerate(gano_estate_cards):
+                    with [col_g1, col_g2, col_g3][idx]:
+                        st.metric(
+                            gano_item['estate'],
+                            f"{gano_item['rate']:.1f}%",
+                            delta="Attack Rate",
+                            delta_color="off"
+                        )
+    
+    
     # GANODERMA ATTACK RATE SECTION - Per Estate (Foundation for Division/Block Drilldown)
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### 🦠 Ganoderma Attack Rate by Estate")
