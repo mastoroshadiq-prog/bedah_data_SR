@@ -106,12 +106,19 @@ def load_ganoderma_data():
     
     return pd.DataFrame(all_data)
 
+@st.cache_data(ttl=60)
+def load_divisions_data():
+    """Load divisions data with estate relationship"""
+    response = supabase.table('divisions').select('*').execute()
+    return pd.DataFrame(response.data)
+
 # Load all data
 df_prod = load_production_data()
 df_blocks = load_blocks_data()
 df_estates = load_estates_data()
 df_infra = load_infrastructure_data()
-df_gano = load_ganoderma_data()  # Load ganoderma data
+df_gano = load_ganoderma_data()
+df_divisions = load_divisions_data()  # Load divisions hierarchy
 
 # DEBUG: Show what years we actually loaded
 st.sidebar.markdown("---")
@@ -535,6 +542,11 @@ if selected_year == 'All Years' and selected_estate == 'All':
         'DBE': {'color': '#f59e0b', 'col': col_dbe}
     }
     
+    
+    # Initialize session state for selected estate
+    if 'selected_gano_estate' not in st.session_state:
+        st.session_state.selected_gano_estate = None
+    
     for estate_code, info in estate_info.items():
         with info['col']:
             attack_rate = gano_by_estate[estate_code]
@@ -554,27 +566,98 @@ if selected_year == 'All Years' and selected_estate == 'All':
                 severity = "LOW"
                 severity_icon = "🟢"
             
-            st.markdown(f"""
-            <div style='background: linear-gradient(135deg, {info['color']} 0%, rgba(0,0,0,0.3) 100%); 
-                        padding: 25px 20px; border-radius: 10px; text-align: center;
-                        border: 2px solid {info['color']}; 
-                        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-                        cursor: pointer; transition: transform 0.2s;'
-                 onmouseover='this.style.transform="scale(1.02)"' 
-                 onmouseout='this.style.transform="scale(1)"'>
-                <h3 style='color: white; margin: 0 0 10px 0; font-size: 1.8em;'>{estate_code}</h3>
-                <p style='color: {info['color']}; font-size: 3em; font-weight: 700; margin: 10px 0;'>
-                    {attack_rate:.1f}%
-                </p>
-                <p style='color: #e5e7eb; font-size: 1em; margin: 5px 0;'>
-                    {severity_icon} {severity} Risk
-                </p>
-                <hr style='border-color: rgba(255,255,255,0.2); margin: 15px 0;'>
-                <p style='color: #d1d5db; font-size: 0.9em; margin: 0;'>
-                    📍 {blocks_surveyed} blocks surveyed
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
+            # Clickable card button
+            if st.button(
+                f"{severity_icon} {estate_code}\n{attack_rate:.1f}%\n{severity} Risk",
+                key=f"gano_{estate_code}",
+                use_container_width=True,
+                help=f"Click to see division breakdown"
+            ):
+                st.session_state.selected_gano_estate = estate_code
+            
+            st.caption(f"📍 {blocks_surveyed} blocks surveyed")
+    
+    # Show division breakdown if estate selected
+    if st.session_state.selected_gano_estate:
+        sel_estate = st.session_state.selected_gano_estate
+        
+        # Use expander
+        with st.expander(f"📊 **Division Breakdown - {sel_estate} Estate**", expanded=True):
+            if st.button("❌ Close", key="close_gano"):
+                st.session_state.selected_gano_estate = None
+                st.rerun()
+            
+            # Get estate_id from estates table
+            estate_row = df_estates[df_estates['estate_code'] == sel_estate]
+            if len(estate_row) > 0:
+                estate_id = estate_row['id'].values[0]
+                
+                # Get divisions for this estate from divisions table (CLEAN!)
+                estate_divisions = df_divisions[df_divisions['estate_id'] == estate_id]
+                
+                if len(estate_divisions) > 0:
+                    st.write(f"**{len(estate_divisions)} divisions in {sel_estate}**")
+                    
+                    # For each division, calculate ganoderma stats
+                    div_stats = []
+                    for _, div_row in estate_divisions.iterrows():
+                        # Get blocks in this division using division_id
+                        div_blocks = df_blocks[df_blocks['division_id'] == div_row['id']]
+                        block_ids = div_blocks['id'].tolist()
+                        
+                        # Get ganoderma data for these blocks
+                        div_gano = df_gano[df_gano['block_id'].isin(block_ids)]
+                        
+                        if len(div_gano) > 0:
+                            avg_rate = div_gano['pct_serangan'].mean() * 100
+                            div_stats.append({
+                                'division': div_row['division_code'],
+                                'attack_rate': avg_rate,
+                                'block_count': len(div_gano)
+                            })
+                    
+                    if div_stats:
+                        # Sort by attack rate descending
+                        div_stats = sorted(div_stats, key=lambda x: x['attack_rate'], reverse=True)
+                        
+                        # Display division cards
+                        cols_per_row = 5
+                        for i in range(0, len(div_stats), cols_per_row):
+                            cols = st.columns(cols_per_row)
+                            for j in range(min(cols_per_row, len(div_stats) - i)):
+                                row = div_stats[i + j]
+                                with cols[j]:
+                                    rate = row['attack_rate']
+                                    
+                                    # Color coding
+                                    if rate >= 15:
+                                        color = "#dc2626"
+                                        label = "CRITICAL"
+                                    elif rate >= 10:
+                                        color = "#ea580c"
+                                        label = "HIGH"
+                                    elif rate >= 5:
+                                        color = "#f59e0b"
+                                        label = "MEDIUM"
+                                    else:
+                                        color = "#10b981"
+                                        label = "LOW"
+                                    
+                                    st.markdown(f"""
+<div style="background: linear-gradient(135deg, {color} 0%, rgba(0,0,0,0.5) 100%);
+            padding: 12px; border-radius: 8px; text-align: center;">
+    <p style="color: white; margin: 0; font-size: 0.9em; font-weight: bold;">{row['division']}</p>
+    <p style="color: white; font-size: 1.8em; font-weight: bold; margin: 8px 0;">{rate:.1f}%</p>
+    <p style="color: #e5e7eb; margin: 3px 0; font-size: 0.75em;">{label}</p>
+    <p style="color: #9ca3af; font-size: 0.7em; margin: 0;">{int(row['block_count'])} blk</p>
+</div>
+""", unsafe_allow_html=True)
+                    else:
+                        st.info(f"No ganoderma data for divisions in {sel_estate}")
+                else:
+                    st.warning(f"No divisions found for {sel_estate}")
+            else:
+                st.error(f"Estate {sel_estate} not found")
     
     # ESTATE BREAKDOWN - Show when year is selected
     if st.session_state.selected_detail_year is not None:
