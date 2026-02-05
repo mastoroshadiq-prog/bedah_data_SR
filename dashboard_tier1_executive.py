@@ -272,72 +272,65 @@ if selected_year == 'All Years' and selected_estate == 'All':
             'loss_billion': year_loss / 1_000_000_000
         })
     
-    # MASSIVE LOSS DISPLAY - FULL WIDTH
-    st.markdown(f"""
-    <div style='background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); 
-                padding: 50px; border-radius: 15px; text-align: center; 
-                box-shadow: 0 10px 30px rgba(220, 38, 38, 0.3);'>
-        <h1 style='color: white; font-size: 4em; margin: 0; font-weight: 700;'>
-            Rp {opportunity_loss/1_000_000_000:.2f} Milyar
-        </h1>
-        <p style='color: #fecaca; font-size: 1.8em; margin-top: 15px;'>
-            Total Opportunity Loss (2023-2025)
-        </p>
-        <hr style='border-color: rgba(255,255,255,0.3); margin: 25px 0;'>
-        <p style='color: white; font-size: 1.3em; margin: 0;'>
-            {abs(total_gap):,.0f} Ton × Rp {tbs_price_kg:,}/Kg = Rp {opportunity_loss:,.0f}
-        </p>
-        <p style='color: #fecaca; font-size: 1.1em; margin-top: 10px;'>
-            ({(total_gap/total_production_target*100):.1f}% below target)
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
     
-    # YEARLY BREAKDOWN - HORIZONTAL BAR CHARTS
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("**📊 Yearly Loss Breakdown:**")
+    # COMBINED LAYOUT: Pie Chart (Left) | Total Loss (Right)
+    col_pie, col_total = st.columns([1, 1])
     
-    # Create horizontal bar chart with Plotly
-    fig_yearly = go.Figure()
-    
-    for item in yearly_loss:
-        fig_yearly.add_trace(go.Bar(
-            y=[str(item['year'])],
-            x=[item['loss_billion']],
-            orientation='h',
-            name=str(item['year']),
-            text=[f"Rp {item['loss_billion']:.2f} Milyar"],
-            textposition='inside',
-            textfont=dict(color='white', size=14, family='Arial Black'),
-            hovertemplate=f"<b>{item['year']}</b><br>" +
-                         f"Loss: Rp {item['loss_billion']:.2f} Milyar<br>" +
-                         f"Gap: {item['gap_ton']:,.0f} Ton<br>" +
-                         "<extra></extra>",
+    with col_pie:
+        # PIE CHART - Yearly Breakdown
+        fig_pie = go.Figure(data=[go.Pie(
+            labels=[str(item['year']) for item in yearly_loss],
+            values=[item['loss_billion'] for item in yearly_loss],
+            hole=0.5,
             marker=dict(
-                color=['#dc2626', '#ea580c', '#f59e0b'][yearly_loss.index(item)],
-                line=dict(color='white', width=2)
-            )
-        ))
-    
-    fig_yearly.update_layout(
-        showlegend=False,
-        height=200,
-        margin=dict(l=60, r=20, t=10, b=40),
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(
-            title="Loss (Rp Milyar)",
-            gridcolor='rgba(128,128,128,0.2)',
-            color='#e5e7eb'
-        ),
-        yaxis=dict(
-            title="",
-            color='#e5e7eb',
-            tickfont=dict(size=14, family='Arial Black')
+                colors=['#dc2626', '#ea580c', '#f59e0b'],
+                line=dict(color='#1f2937', width=3)
+            ),
+            textinfo='label+percent',
+            textfont=dict(size=15, color='white', family='Arial Black'),
+            hovertemplate="<b>%{label}</b><br>" +
+                         "Loss: Rp %{value:.2f} Milyar<br>" +
+                         "<extra></extra>"
+        )])
+        
+        fig_pie.update_layout(
+            showlegend=False,
+            height=380,
+            margin=dict(l=20, r=20, t=30, b=20),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            annotations=[dict(
+                text=f'<b>Total</b><br>Rp {opportunity_loss/1_000_000_000:.1f}M',
+                x=0.5, y=0.5,
+                font=dict(size=18, color='#e5e7eb'),
+                showarrow=False
+            )]
         )
-    )
+        
+        st.plotly_chart(fig_pie, use_container_width=True)
     
-    st.plotly_chart(fig_yearly, use_container_width=True)
+    with col_total:
+        # TOTAL LOSS DISPLAY
+        st.markdown(f"""
+        <div style='background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); 
+                    padding: 40px 30px; border-radius: 12px; text-align: center; 
+                    box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4); height: 380px;
+                    display: flex; flex-direction: column; justify-content: center;'>
+            <p style='color: #fecaca; font-size: 1.2em; margin: 0 0 15px 0; font-weight: 600;'>
+                Total Opportunity Loss (2023-2025)
+            </p>
+            <h1 style='color: white; font-size: 3.5em; margin: 0; font-weight: 700;'>
+                Rp {opportunity_loss/1_000_000_000:.2f} Milyar
+            </h1>
+            <hr style='border-color: rgba(255,255,255,0.3); margin: 25px 0;'>
+            <p style='color: white; font-size: 1.1em; margin: 0;'>
+                {abs(total_gap):,.0f} Ton × Rp {tbs_price_kg:,}/Kg
+            </p>
+            <p style='color: #fecaca; font-size: 1.3em; margin-top: 12px; font-weight: 600;'>
+                ({(total_gap/total_production_target*100):.1f}% below target)
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
     
     # YEAR SELECTOR BUTTONS
     st.markdown("**👆 Click year to see estate breakdown:**")
@@ -362,6 +355,81 @@ if selected_year == 'All Years' and selected_estate == 'All':
     with col_btn4:
         if st.button("❌ Clear Selection", use_container_width=True):
             st.session_state.selected_detail_year = None
+    
+    # GANODERMA ATTACK RATE SECTION - Per Estate (Foundation for Division/Block Drilldown)
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("### 🦠 Ganoderma Attack Rate by Estate")
+    st.markdown("<p style='color: #9ca3af; font-size: 0.9em;'>📊 Data from 2025 field survey | Click estate for division breakdown (coming soon)</p>", unsafe_allow_html=True)
+    
+    # Calculate ganoderma % per estate
+    gano_by_estate = {}
+    gano_blocks_count = {}
+    
+    for estate_code in ['AME', 'OLE', 'DBE']:
+        # Get blocks for this estate from main dataframe
+        df_estate_blocks = df[df['estate'] == estate_code]
+        block_ids = df_estate_blocks['block_id'].unique()
+        
+        # Get ganoderma data for these blocks
+        df_gano_estate = df_gano[df_gano['block_id'].isin(block_ids)]
+        
+        if len(df_gano_estate) > 0:
+            avg_gano_pct = df_gano_estate['pct_serangan'].mean() * 100
+            gano_by_estate[estate_code] = avg_gano_pct
+            gano_blocks_count[estate_code] = len(df_gano_estate)
+        else:
+            gano_by_estate[estate_code] = 0
+            gano_blocks_count[estate_code] = 0
+    
+    # Display as 3 columns with gradient cards
+    col_ame, col_ole, col_dbe = st.columns(3)
+    
+    estate_info = {
+        'AME': {'color': '#dc2626', 'col': col_ame},
+        'OLE': {'color': '#ea580c', 'col': col_ole},
+        'DBE': {'color': '#f59e0b', 'col': col_dbe}
+    }
+    
+    for estate_code, info in estate_info.items():
+        with info['col']:
+            attack_rate = gano_by_estate[estate_code]
+            blocks_surveyed = gano_blocks_count[estate_code]
+            
+            # Determine severity level
+            if attack_rate >= 15:
+                severity = "CRITICAL"
+                severity_icon = "🔴"
+            elif attack_rate >= 10:
+                severity = "HIGH"
+                severity_icon = "🟠"
+            elif attack_rate >= 5:
+                severity = "MEDIUM"
+                severity_icon = "🟡"
+            else:
+                severity = "LOW"
+                severity_icon = "🟢"
+            
+            st.markdown(f"""
+            <div style='background: linear-gradient(135deg, {info['color']} 0%, rgba(0,0,0,0.3) 100%); 
+                        padding: 25px 20px; border-radius: 10px; text-align: center;
+                        border: 2px solid {info['color']}; 
+                        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                        cursor: pointer; transition: transform 0.2s;'
+                 onmouseover='this.style.transform="scale(1.02)"' 
+                 onmouseout='this.style.transform="scale(1)"'>
+                <h3 style='color: white; margin: 0 0 10px 0; font-size: 1.8em;'>{estate_code}</h3>
+                <p style='color: {info['color']}; font-size: 3em; font-weight: 700; margin: 10px 0;'>
+                    {attack_rate:.1f}%
+                </p>
+                <p style='color: #e5e7eb; font-size: 1em; margin: 5px 0;'>
+                    {severity_icon} {severity} Risk
+                </p>
+                <hr style='border-color: rgba(255,255,255,0.2); margin: 15px 0;'>
+                <p style='color: #d1d5db; font-size: 0.9em; margin: 0;'>
+                    📍 {blocks_surveyed} blocks surveyed
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
     
     # ESTATE BREAKDOWN - Show when year is selected
     if st.session_state.selected_detail_year is not None:
