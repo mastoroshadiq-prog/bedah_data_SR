@@ -1,0 +1,179 @@
+====================================================================================================
+COLUMN NAME MAPPING: CODE → MEANINGFUL NAME
+====================================================================================================
+
+  1. K001       → k001
+  2. K002       → k002
+  3. NOMOR      → nomor
+  4. C001       → estate_lama
+  5. C002       → baru
+  6. C003       → divisi_lama
+  7. C004       → baru
+  8. C005       → blok_lama
+  9. C006       → baru
+ 10. C007       → tt
+ 11. C008       → varietas_bibit
+ 12. C009       → ha_statement_luas_tanam_sd_thn_2024
+ 13. C010       → penambahan
+ 14. C011       → sd_2025
+ 15. C012       → empls
+ 16. C013       → bbt
+ 17. C014       → pks
+ 18. C015       → jln_parit
+ 19. C016       → areal_cdg
+ 20. C017       → total
+ 21. C018       → realisasi_tanam_sd_november_2025_komposisi_pokok
+ 22. C019       → c019
+ 23. C020       → c020
+ 24. C021       → c021
+ 25. C022       → c022
+ 26. C023       → c023
+ 27. C024       → c024
+ 28. C025       → c025
+ 29. C026       → c026
+ 30. C027       → c027
+ 31. C028       → c028
+ 32. C029       → c029
+ 33. C030       → sd_thn_2019_pkk
+ 34. C031       → sph
+ 35. C032       → thn_2020_tanam
+ 36. C033       → sisip
+ 37. C034       → thn_2021_tanam
+ 38. C035       → sisip
+ 39. C036       → thn_2022_tanam
+ 40. C037       → sisip
+ 41. C038       → thn_2023_tanam
+ 42. C039       → sisip
+ 43. C040       → sisip_kentosan
+ 44. C041       → thn_2024_tanam
+ 45. C042       → sisip
+ 46. C043       → sisip_kentosan
+ 47. C044       → sisip_kentosan
+ 48. C045       → thn_2025_tanam
+ 49. C046       → sisip
+ 50. C047       → sisip_kentosan
+ 51. C048       → total_tanam
+ 52. C049       → sisip
+ 53. C050       → sisip_kentosan
+ 54. C051       → total_pkk
+ 55. C052       → sph
+ 56. C053       → serangan_ganoderma_pkk_stadium_1&2
+ 57. C054       → stadium_3&4
+ 58. C055       → total
+ 59. C056       → %serangan
+ 60. nan        → col_0
+ 61. P001       → estate
+ 62. P002       → blok
+ 63. P003       → ha
+ 64. P004       → tt_sisip
+ 65. P005       → pokok
+ 66. P006       → tt
+ 67. P007       → sph
+ 68. P008       → real_bjr_kg
+ 69. P009       → jum_jjg
+ 70. P010       → ton
+ 71. P011       → potensi_bjr_kg
+ 72. P012       → jum_jjg
+ 73. P013       → ton
+ 74. P014       → real_vs_potensi_bjr_kg
+ 75. P015       → jum_jjg
+ 76. P016       → ton
+ 77. P017       → real_bjr_kg
+ 78. P018       → jum_jjg
+ 79. P019       → ton
+ 80. P020       → potensi_bjr_kg
+ 81. P021       → jum_jjg
+ 82. P022       → ton
+ 83. P023       → real_vs_potensi_bjr_kg
+ 84. P024       → jum_jjg
+ 85. P025       → ton
+ 86. P026       → real_bjr_kg
+ 87. P027       → jum_jjg
+ 88. P028       → ton
+ 89. P029       → potensi_bjr_kg
+ 90. P030       → jum_jjg
+ 91. P031       → ton
+ 92. P032       → real_vs_potensi_bjr_kg
+ 93. P033       → jum_jjg
+ 94. P034       → ton
+ 95. P035       → real_bjr_kg
+ 96. P036       → jum_jjg
+ 97. P037       → ton
+ 98. P038       → potensi_bjr_kg
+ 99. P039       → jum_jjg
+100. P040       → ton
+101. P041       → real_vs_potensi_bjr_kg
+102. P042       → jum_jjg
+103. P043       → ton
+104. P044       → real_bjr_kg
+105. P045       → jum_jjg
+106. P046       → ton
+107. P047       → potensi_bjr_kg
+108. P048       → jum_jjg
+109. P049       → ton
+110. P050       → real_vs_potensi_bjr_kg
+111. P051       → jum_jjg
+112. P052       → ton
+113. P053       → real_bjr_kg
+114. P054       → jum_jjg
+115. P055       → ton
+116. P056       → potensi_bjr_kg
+117. P057       → jum_jjg
+118. P058       → ton
+119. P059       → real_vs_potensi_bjr_kg
+120. P060       → jum_jjg
+121. P061       → ton
+122. P062       → real_bjr_kg
+123. P063       → jum_jjg
+124. P064       → ton
+125. P065       → potensi_bjr_kg
+126. P066       → jum_jjg
+127. P067       → ton
+128. P068       → real_vs_potensi_bjr_kg
+129. P069       → jum_jjg
+130. P070       → ton
+131. P071       → real_bjr_kg
+132. P072       → jum_jjg
+133. P073       → ton
+134. P074       → potensi_bjr_kg
+135. P075       → jum_jjg
+136. P076       → ton
+137. P077       → real_vs_potensi_bjr_kg
+138. P078       → jum_jjg
+139. P079       → ton
+140. P080       → real_bjr_kg
+141. P081       → jum_jjg
+142. P082       → ton
+143. P083       → potensi_bjr_kg
+144. P084       → jum_jjg
+145. P085       → ton
+146. P086       → real_vs_potensi_bjr_kg
+147. P087       → jum_jjg
+148. P088       → ton
+149. P089       → real_bjr_kg
+150. P090       → jum_jjg
+151. P091       → ton
+152. P092       → potensi_bjr_kg
+153. P093       → jum_jjg
+154. P094       → ton
+155. P095       → real_vs_potensi_bjr_kg
+156. P096       → jum_jjg
+157. P097       → ton
+158. P098       → real_bjr_kg
+159. P099       → jum_jjg
+160. P100       → ton
+161. P101       → potensi_bjr_kg
+162. P102       → jum_jjg
+163. P103       → ton
+164. P104       → real_vs_potensi_bjr_kg
+165. P105       → jum_jjg
+166. P106       → ton
+167. P107       → real_bjr_kg
+168. P108       → jum_jjg
+169. P109       → ton
+170. P110       → potensi_bjr_kg
+171. P111       → jum_jjg
+172. P112       → ton
+173. P113       → real_vs_potensi_bjr_kg
+174. P114       → jum_jjg
+175. P115       → ton

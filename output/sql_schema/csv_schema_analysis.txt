@@ -1,0 +1,35 @@
+CSV SCHEMA ANALYSIS
+====================================================================================================
+
+estates:
+  Records: 3
+  Columns: id, estate_code, estate_name
+
+blocks:
+  Records: 641
+  Columns: id, block_code, has_production_data, category
+
+block_land_infrastructure:
+  Records: 645
+  Columns: id, block_id, block_code, luas_tanam_sd_2024_ha, total_luas_sd_2025_ha, empls, bbt, pks, jalan_parit_ha, areal_cadangan_ha, total_luas_keseluruhan_ha, standar_pokok_per_hektar
+
+block_pest_disease:
+  Records: 645
+  Columns: id, block_id, block_code, serangan_ganoderma_pkk_stadium_1&2, stadium_3&4, %serangan, recorded_date
+
+block_planting_history:
+  Records: 7,095
+  Columns: id, block_id, block_code, komposisi_pokok, year, sph
+
+block_planting_yearly:
+  Records: 3,870
+  Columns: id, block_id, block_code, year, tanam, sph
+
+production_annual:
+  Records: 1,920
+  Columns: id, block_id, block_code, year, real_bjr_kg, real_jum_jjg, real_ton, potensi_bjr_kg, potensi_jum_jjg, potensi_ton, gap_bjr_kg, gap_jum_jjg, gap_ton, gap_pct_bjr, gap_pct_jjg, gap_pct_ton
+
+production_monthly:
+  Records: 11,034
+  Columns: id, block_id, block_code, year, month, real_bjr_kg, real_jum_jjg, real_ton, potensi_bjr_kg, potensi_jum_jjg, potensi_ton, gap_bjr_kg, gap_jum_jjg, gap_ton, gap_pct_bjr, gap_pct_jjg, gap_pct_ton
+
