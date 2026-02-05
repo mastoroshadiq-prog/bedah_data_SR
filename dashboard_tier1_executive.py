@@ -620,7 +620,11 @@ if selected_year == 'All Years' and selected_estate == 'All':
                         # Sort by attack rate descending
                         div_stats = sorted(div_stats, key=lambda x: x['attack_rate'], reverse=True)
                         
-                        # Display division cards
+                        # Initialize session state for selected division
+                        if 'selected_gano_division' not in st.session_state:
+                            st.session_state.selected_gano_division = None
+                        
+                        # Display division cards - CLICKABLE
                         cols_per_row = 5
                         for i in range(0, len(div_stats), cols_per_row):
                             cols = st.columns(cols_per_row)
@@ -631,27 +635,160 @@ if selected_year == 'All Years' and selected_estate == 'All':
                                     
                                     # Color coding
                                     if rate >= 15:
-                                        color = "#dc2626"
                                         label = "CRITICAL"
+                                        icon = "🔴"
                                     elif rate >= 10:
-                                        color = "#ea580c"
                                         label = "HIGH"
+                                        icon = "🟠"
                                     elif rate >= 5:
-                                        color = "#f59e0b"
                                         label = "MEDIUM"
+                                        icon = "🟡"
                                     else:
-                                        color = "#10b981"
                                         label = "LOW"
+                                        icon = "🟢"
                                     
-                                    st.markdown(f"""
-<div style="background: linear-gradient(135deg, {color} 0%, rgba(0,0,0,0.5) 100%);
-            padding: 12px; border-radius: 8px; text-align: center;">
-    <p style="color: white; margin: 0; font-size: 0.9em; font-weight: bold;">{row['division']}</p>
-    <p style="color: white; font-size: 1.8em; font-weight: bold; margin: 8px 0;">{rate:.1f}%</p>
-    <p style="color: #e5e7eb; margin: 3px 0; font-size: 0.75em;">{label}</p>
-    <p style="color: #9ca3af; font-size: 0.7em; margin: 0;">{int(row['block_count'])} blk</p>
+                                    # Clickable button for division
+                                    if st.button(
+                                        f"{icon} {row['division']}\n{rate:.1f}%\n{int(row['block_count'])} blk",
+                                        key=f"div_{row['division']}",
+                                        use_container_width=True,
+                                        help="Click to see blocks"
+                                    ):
+                                        st.session_state.selected_gano_division = row['division']
+                                        st.rerun()
+                        
+                        # Block-level breakdown if division selected
+                        if st.session_state.selected_gano_division:
+                            sel_division = st.session_state.selected_gano_division
+                            
+                            st.markdown("---")
+                            st.markdown(f"### 📦 Block Breakdown - {sel_division}")
+                            
+                            col_close, col_back = st.columns([6, 1])
+                            with col_back:
+                                if st.button("⬅️ Back", key="back_to_divisions"):
+                                    st.session_state.selected_gano_division = None
+                                    st.rerun()
+                            
+                            # Get division_id
+                            div_row = estate_divisions[estate_divisions['division_code'] == sel_division]
+                            if len(div_row) > 0:
+                                division_id = div_row.iloc[0]['id']
+                                
+                                # Get blocks in this division
+                                div_blocks_df = df_blocks[df_blocks['division_id'] == division_id]
+                                
+                                # Get ganoderma data for these blocks
+                                block_stats = []
+                                for _, block_row in div_blocks_df.iterrows():
+                                    block_gano = df_gano[df_gano['block_id'] == block_row['id']]
+                                    
+                                    if len(block_gano) > 0:
+                                        block_rate = block_gano['pct_serangan'].values[0] * 100
+                                        block_stats.append({
+                                            'block_code': block_row['block_code'],
+                                            'attack_rate': block_rate
+                                        })
+                                
+                                if block_stats:
+                                    # Sort by attack rate descending (initial)
+                                    block_stats = sorted(block_stats, key=lambda x: x['attack_rate'], reverse=True)
+                                    
+                                    # SEARCH & FILTER CONTROLS
+                                    st.markdown("---")
+                                    col_search, col_severity, col_sort = st.columns([3, 2, 2])
+                                    
+                                    with col_search:
+                                        search_term = st.text_input(
+                                            "🔍 Search Block Code",
+                                            key=f"search_{sel_division}",
+                                            placeholder="e.g. A001, B002..."
+                                        )
+                                    
+                                    with col_severity:
+                                        severity_filter = st.selectbox(
+                                            "Filter by Severity",
+                                            ["All", "Critical (≥15%)", "High (≥10%)", "Medium (≥5%)", "Low (<5%)"],
+                                            key=f"severity_{sel_division}"
+                                        )
+                                    
+                                    with col_sort:
+                                        sort_by = st.selectbox(
+                                            "Sort by",
+                                            ["Attack Rate ↓", "Attack Rate ↑", "Block Code A-Z", "Block Code Z-A"],
+                                            key=f"sort_{sel_division}"
+                                        )
+                                    
+                                    # Apply filters
+                                    filtered_blocks = block_stats.copy()
+                                    
+                                    # Search filter
+                                    if search_term:
+                                        filtered_blocks = [
+                                            b for b in filtered_blocks 
+                                            if search_term.upper() in b['block_code'].upper()
+                                        ]
+                                    
+                                    # Severity filter
+                                    if severity_filter != "All":
+                                        if "Critical" in severity_filter:
+                                            filtered_blocks = [b for b in filtered_blocks if b['attack_rate'] >= 15]
+                                        elif "High" in severity_filter:
+                                            filtered_blocks = [b for b in filtered_blocks if 10 <= b['attack_rate'] < 15]
+                                        elif "Medium" in severity_filter:
+                                            filtered_blocks = [b for b in filtered_blocks if 5 <= b['attack_rate'] < 10]
+                                        elif "Low" in severity_filter:
+                                            filtered_blocks = [b for b in filtered_blocks if b['attack_rate'] < 5]
+                                    
+                                    # Sort
+                                    if sort_by == "Attack Rate ↓":
+                                        filtered_blocks = sorted(filtered_blocks, key=lambda x: x['attack_rate'], reverse=True)
+                                    elif sort_by == "Attack Rate ↑":
+                                        filtered_blocks = sorted(filtered_blocks, key=lambda x: x['attack_rate'])
+                                    elif sort_by == "Block Code A-Z":
+                                        filtered_blocks = sorted(filtered_blocks, key=lambda x: x['block_code'])
+                                    elif sort_by == "Block Code Z-A":
+                                        filtered_blocks = sorted(filtered_blocks, key=lambda x: x['block_code'], reverse=True)
+                                    
+                                    # Display results count
+                                    st.write(f"**Showing {len(filtered_blocks)} of {len(block_stats)} blocks**")
+                                    
+                                    if len(filtered_blocks) > 0:
+                                        # Display block cards - more compact
+                                        cols_per_row = 6
+                                        for i in range(0, len(filtered_blocks), cols_per_row):
+                                            cols = st.columns(cols_per_row)
+                                            for j in range(min(cols_per_row, len(filtered_blocks) - i)):
+                                                block = filtered_blocks[i + j]
+                                                with cols[j]:
+                                                    rate = block['attack_rate']
+                                                    
+                                                    # Color coding
+                                                    if rate >= 15:
+                                                        color = "#dc2626"
+                                                        label = "CRIT"
+                                                    elif rate >= 10:
+                                                        color = "#ea580c"
+                                                        label = "HIGH"
+                                                    elif rate >= 5:
+                                                        color = "#f59e0b"
+                                                        label = "MED"
+                                                    else:
+                                                        color = "#10b981"
+                                                        label = "LOW"
+                                                    
+                                                    st.markdown(f"""
+<div style="background: linear-gradient(135deg, {color} 0%, rgba(0,0,0,0.6) 100%);
+            padding: 10px; border-radius: 6px; text-align: center;">
+    <p style="color: white; margin: 0; font-size: 0.8em; font-weight: bold;">{block['block_code']}</p>
+    <p style="color: white; font-size: 1.5em; font-weight: bold; margin: 6px 0;">{rate:.1f}%</p>
+    <p style="color: #e5e7eb; margin: 0; font-size: 0.65em;">{label}</p>
 </div>
 """, unsafe_allow_html=True)
+                                    else:
+                                        st.info("No blocks match your filter criteria")
+                                else:
+                                    st.info(f"No ganoderma data for blocks in {sel_division}")
                     else:
                         st.info(f"No ganoderma data for divisions in {sel_estate}")
                 else:
