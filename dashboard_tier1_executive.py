@@ -244,7 +244,9 @@ period_display = year_label if selected_year == 'All Years' else f"Year {selecte
 st.header(f"📊 Portfolio Performance - {period_display}")
 
 # Calculate metrics
-total_area = df_filtered['total_luas_sd_2025_ha'].sum()
+# Fix: Deduplicate blocks to avoid counting same block multiple times across years
+df_unique_blocks = df_filtered.drop_duplicates(subset=['block_id'])
+total_area = df_unique_blocks['total_luas_sd_2025_ha'].sum()
 total_production_actual = df_filtered['real_ton'].sum()
 total_production_target = df_filtered['potensi_ton'].sum()
 total_gap = total_production_actual - total_production_target
@@ -290,7 +292,7 @@ if selected_year == 'All Years' and selected_estate == 'All':
             values=[item['loss_billion'] for item in yearly_loss],
             hole=0.5,
             marker=dict(
-                colors=['#dc2626', '#ea580c', '#f59e0b'],
+                colors=['#2d5016', '#558b2f', '#7cb342'],  # Plantation greens: dark to light
                 line=dict(color='#1f2937', width=3)
             ),
             textinfo='label+percent',
@@ -319,11 +321,11 @@ if selected_year == 'All Years' and selected_estate == 'All':
     with col_total:
         # TOTAL LOSS DISPLAY
         st.markdown(f"""
-        <div style='background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); 
+        <div style='background: linear-gradient(135deg, #5c7c5a 0%, #3d5a3b 100%); 
                     padding: 40px 30px; border-radius: 12px; text-align: center; 
-                    box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4); height: 380px;
+                    box-shadow: 0 8px 20px rgba(61, 90, 59, 0.4); height: 380px;
                     display: flex; flex-direction: column; justify-content: center;'>
-            <p style='color: #fecaca; font-size: 1.2em; margin: 0 0 15px 0; font-weight: 600;'>
+            <p style='color: #c5e1a5; font-size: 1.2em; margin: 0 0 15px 0; font-weight: 600;'>
                 Total Opportunity Loss (2023-2025)
             </p>
             <h1 style='color: white; font-size: 3.5em; margin: 0; font-weight: 700;'>
@@ -333,7 +335,7 @@ if selected_year == 'All Years' and selected_estate == 'All':
             <p style='color: white; font-size: 1.1em; margin: 0;'>
                 {abs(total_gap):,.0f} Ton × Rp {tbs_price_kg:,}/Kg
             </p>
-            <p style='color: #fecaca; font-size: 1.3em; margin-top: 12px; font-weight: 600;'>
+            <p style='color: #c5e1a5; font-size: 1.3em; margin-top: 12px; font-weight: 600;'>
                 ({(total_gap/total_production_target*100):.1f}% below target)
             </p>
         </div>
@@ -373,9 +375,9 @@ if selected_year == 'All Years' and selected_estate == 'All':
             
             estate_breakdown = []
             estate_colors = {
-                'AME': '#dc2626',
-                'OLE': '#ea580c', 
-                'DBE': '#f59e0b'
+                'AME': '#2d5016',  # Dark forest green
+                'OLE': '#558b2f',  # Medium olive green
+                'DBE': '#7cb342'   # Light leaf green
             }
             
             for estate_code in ['AME', 'OLE', 'DBE']:
@@ -447,10 +449,10 @@ if selected_year == 'All Years' and selected_estate == 'All':
             for idx, item in enumerate(estate_breakdown):
                 with cols[idx]:
                     st.markdown(f"""
-                    <div style='background: linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%);
+                    <div style='background: linear-gradient(135deg, #3e5545 0%, #2d3e33 100%);
                                 padding: 20px; border-radius: 10px; border-left: 4px solid {item['color']};
                                 box-shadow: 0 4px 10px rgba(0,0,0,0.3);'>
-                        <h3 style='color: {item['color']}; margin: 0 0 15px 0; text-align: center; font-size: 1.5em;'>{item['estate']}</h3>
+                        <h3 style='color: white; margin: 0 0 15px 0; text-align: center; font-size: 1.5em;'>{item['estate']}</h3>
                         <p style='color: white; font-size: 1.8em; font-weight: 700; margin: 0; text-align: center;'>
                             Rp {item['loss']:.1f} M
                         </p>
@@ -466,7 +468,7 @@ if selected_year == 'All Years' and selected_estate == 'All':
                            title='Average production gap percentage per block. Negative means underperformance vs target. Formula: ((Actual - Target) / Target) × 100'>
                             📉 <b>Avg Gap %:</b> {item['gap_pct']:.1f}%
                         </p>
-                        <p style='color: #fbbf24; font-size: 0.95em; margin: 5px 0;' 
+                        <p style='color: white; font-size: 0.95em; margin: 5px 0;' 
                            title='Total production shortfall in tons (sum of all blocks). This is the actual tonnage difference between target and actual production.'>
                             ⚠️ <b>Production Shortfall:</b> {item['gap_ton']:,.0f} Ton
                         </p>
@@ -685,9 +687,19 @@ if selected_year == 'All Years' and selected_estate == 'All':
                                     
                                     if len(block_gano) > 0:
                                         block_rate = block_gano['pct_serangan'].values[0] * 100
+                                        stadium_1_2 = block_gano['serangan_ganoderma_pkk_stadium_1_2'].values[0]
+                                        stadium_3_4 = block_gano['stadium_3_4'].values[0]
+                                        
+                                        # Handle NaN values
+                                        stadium_1_2 = 0 if pd.isna(stadium_1_2) else int(stadium_1_2)
+                                        stadium_3_4 = 0 if pd.isna(stadium_3_4) else int(stadium_3_4)
+                                        
                                         block_stats.append({
                                             'block_code': block_row['block_code'],
-                                            'attack_rate': block_rate
+                                            'attack_rate': block_rate,
+                                            'stadium_1_2': stadium_1_2,
+                                            'stadium_3_4': stadium_3_4,
+                                            'total_infected': stadium_1_2 + stadium_3_4
                                         })
                                 
                                 if block_stats:
@@ -754,8 +766,8 @@ if selected_year == 'All Years' and selected_estate == 'All':
                                     st.write(f"**Showing {len(filtered_blocks)} of {len(block_stats)} blocks**")
                                     
                                     if len(filtered_blocks) > 0:
-                                        # Display block cards - more compact
-                                        cols_per_row = 6
+                                        # Display block cards - 4 per row for stadium details
+                                        cols_per_row = 4
                                         for i in range(0, len(filtered_blocks), cols_per_row):
                                             cols = st.columns(cols_per_row)
                                             for j in range(min(cols_per_row, len(filtered_blocks) - i)):
@@ -763,28 +775,33 @@ if selected_year == 'All Years' and selected_estate == 'All':
                                                 with cols[j]:
                                                     rate = block['attack_rate']
                                                     
-                                                    # Color coding
+                                                    # Color coding - solid colors
                                                     if rate >= 15:
-                                                        color = "#dc2626"
-                                                        label = "CRIT"
+                                                        bg_color = "#b91c1c"  # Solid red
+                                                        label = "CRITICAL"
                                                     elif rate >= 10:
-                                                        color = "#ea580c"
+                                                        bg_color = "#c2410c"  # Solid orange
                                                         label = "HIGH"
                                                     elif rate >= 5:
-                                                        color = "#f59e0b"
-                                                        label = "MED"
+                                                        bg_color = "#d97706"  # Solid amber
+                                                        label = "MEDIUM"
                                                     else:
-                                                        color = "#10b981"
+                                                        bg_color = "#059669"  # Solid green
                                                         label = "LOW"
                                                     
-                                                    st.markdown(f"""
-<div style="background: linear-gradient(135deg, {color} 0%, rgba(0,0,0,0.6) 100%);
-            padding: 10px; border-radius: 6px; text-align: center;">
-    <p style="color: white; margin: 0; font-size: 0.8em; font-weight: bold;">{block['block_code']}</p>
-    <p style="color: white; font-size: 1.5em; font-weight: bold; margin: 6px 0;">{rate:.1f}%</p>
-    <p style="color: #e5e7eb; margin: 0; font-size: 0.65em;">{label}</p>
+                                                    html_card = f"""
+<div style="background: {bg_color}; padding: 14px; border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+    <p style="color: white; margin: 0; font-size: 1.1em; font-weight: bold;">{block['block_code']}</p>
+    <p style="color: white; font-size: 2.2em; font-weight: bold; margin: 10px 0;">{rate:.1f}%</p>
+    <p style="color: rgba(255,255,255,0.9); margin: 0 0 12px 0; font-size: 0.85em;">{label}</p>
+    <div style="background: rgba(0,0,0,0.25); padding: 10px; border-radius: 4px; margin-top: 8px;">
+        <p style="color: #fbbf24; font-size: 0.95em; margin: 4px 0;">🟡 Stadium 1&2: {block['stadium_1_2']} pohon</p>
+        <p style="color: #fca5a5; font-size: 0.95em; margin: 4px 0;">🔴 Stadium 3&4: {block['stadium_3_4']} pohon</p>
+        <p style="color: white; font-size: 1em; margin: 6px 0 0 0; font-weight: bold; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 6px;">Total Terinfeksi: {block['total_infected']} pohon</p>
+    </div>
 </div>
-""", unsafe_allow_html=True)
+"""
+                                                    st.markdown(html_card, unsafe_allow_html=True)
                                     else:
                                         st.info("No blocks match your filter criteria")
                                 else:
@@ -796,174 +813,9 @@ if selected_year == 'All Years' and selected_estate == 'All':
             else:
                 st.error(f"Estate {sel_estate} not found")
     
-    # ESTATE BREAKDOWN - Show when year is selected
-    if st.session_state.selected_detail_year is not None:
-        selected_yr = st.session_state.selected_detail_year
-        
-        st.markdown("---")
-        st.markdown(f"### 📍 Estate Breakdown for Year {selected_yr}")
-        
-        # Calculate estate breakdown for selected year
-        df_selected_year = df[df['year'] == selected_yr]
-        
-        estate_breakdown = []
-        for estate_code in ['AME', 'OLE', 'DBE']:
-            df_estate = df_selected_year[df_selected_year['estate'] == estate_code]
-            
-            if len(df_estate) > 0:
-                estate_gap = df_estate['gap_ton'].sum()
-                estate_loss = abs(estate_gap) * cpo_price if estate_gap < 0 else 0
-                estate_blocks = len(df_estate)
-                
-                estate_breakdown.append({
-                    'estate': estate_code,
-                    'gap_ton': estate_gap,
-                    'loss_billion': estate_loss / 1_000_000_000,
-                    'blocks': estate_blocks
-                })
-        
-        # Display as horizontal bar chart
-        if estate_breakdown:
-            fig_estate = go.Figure()
-            
-            colors = {
-                'AME': '#dc2626',  # Red
-                'OLE': '#ea580c',  # Orange  
-                'DBE': '#f59e0b'   # Amber
-            }
-            
-            for item in estate_breakdown:
-                fig_estate.add_trace(go.Bar(
-                    y=[item['estate']],
-                    x=[item['loss_billion']],
-                    orientation='h',
-                    name=item['estate'],
-                    text=[f"Rp {item['loss_billion']:.2f} Milyar"],
-                    textposition='inside',
-                    textfont=dict(color='white', size=16, family='Arial Black'),
-                    hovertemplate=f"<b>{item['estate']}</b><br>" +
-                                 f"Loss: Rp {item['loss_billion']:.2f} Milyar<br>" +
-                                 f"Gap: {item['gap_ton']:,.0f} Ton<br>" +
-                                 f"Blocks: {item['blocks']}<br>" +
-                                 "<extra></extra>",
-                    marker=dict(
-                        color=colors[item['estate']],
-                        line=dict(color='white', width=2)
-                    )
-                ))
-            
-            fig_estate.update_layout(
-                title=f"Estate Loss Breakdown - Year {selected_yr}",
-                showlegend=False,
-                height=250,
-                margin=dict(l=80, r=20, t=50, b=40),
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                xaxis=dict(
-                    title="Loss (Rp Milyar)",
-                    gridcolor='rgba(128,128,128,0.2)',
-                    color='#e5e7eb'
-                ),
-                yaxis=dict(
-                    title="",
-                    color='#e5e7eb',
-                    tickfont=dict(size=16, family='Arial Black')
-                ),
-                title_font=dict(size=18, color='#e5e7eb')
-            )
-            
-            st.plotly_chart(fig_estate, use_container_width=True)
-            
-            # Summary cards
-            col1, col2, col3 = st.columns(3)
-            
-            # Color palette for estates
-            estate_colors = {
-                'AME': '#dc2626',  # Red
-                'OLE': '#ea580c',  # Orange
-                'DBE': '#f59e0b'   # Amber
-            }
-            
-            for idx, item in enumerate(estate_breakdown):
-                with [col1, col2, col3][idx]:
-                    # Custom styled card
-                    st.markdown(f"""
-                    <div style='background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); 
-                                padding: 20px; border-radius: 10px; 
-                                border-left: 4px solid {estate_colors[item['estate']]};
-                                box-shadow: 0 4px 6px rgba(0,0,0,0.3);'>
-                        <h3 style='color: {estate_colors[item['estate']]}; margin: 0; font-size: 1.5em;'>
-                            {item['estate']}
-                        </h3>
-                        <h2 style='color: white; margin: 10px 0; font-size: 2.2em; font-weight: 700;'>
-                            Rp {item['loss_billion']:.2f} M
-                        </h2>
-                        <div style='margin-top: 15px; padding: 10px; 
-                                    background: rgba(251, 146, 60, 0.15); 
-                                    border-radius: 6px; border-left: 3px solid #fb923c;'>
-                            <p style='color: #fb923c; margin: 0; font-size: 1.1em; font-weight: 600;'>
-                                📊 Total Blocks: <span style='color: #fbbf24;'>{item['blocks']}</span>
-                            </p>
-                            <p style='color: #fb923c; margin: 5px 0 0 0; font-size: 1.1em; font-weight: 600;'>
-                                📉 Gap Yield: <span style='color: #fbbf24;'>{item['gap_ton']:,.0f} Ton</span>
-                            </p>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            # GANODERMA INDICATOR CARD - ONLY FOR 2025 (data available)
-            if selected_yr == 2025:
-                st.markdown("<br>", unsafe_allow_html=True)
-                
-                # Calculate ganoderma % per estate
-                gano_by_estate = {}
-                for estate_code in ['AME', 'OLE', 'DBE']:
-                    # Get blocks for this estate
-                    df_estate_blocks = df_selected_year[df_selected_year['estate'] == estate_code]
-                    block_ids = df_estate_blocks['block_id'].unique()
-                    
-                    # Get ganoderma data for these blocks
-                    df_gano_estate = df_gano[df_gano['block_id'].isin(block_ids)]
-                    
-                    if len(df_gano_estate) > 0:
-                        avg_gano_pct = df_gano_estate['pct_serangan'].mean() * 100
-                        gano_by_estate[estate_code] = avg_gano_pct
-                    else:
-                        gano_by_estate[estate_code] = 0
-                
-                # Display ganoderma card
-                st.markdown(f"""
-                <div style='background: linear-gradient(135deg, #1f2937 0%, #111827 100%); 
-                            padding: 25px; border-radius: 12px; border-left: 4px solid #fbbf24;
-                            box-shadow: 0 4px 12px rgba(0,0,0,0.3);'>
-                    <h4 style='color: #fbbf24; margin-top: 0; display: flex; align-items: center;'>
-                        <span style='font-size: 1.3em; margin-right: 10px;'>🦠</span>
-                        Ganoderma Attack Rate (2025 Survey)
-                    </h4>
-                    <div style='display: flex; justify-content: space-around; margin-top: 15px;'>
-                        <div style='text-align: center;'>
-                            <p style='color: #dc2626; font-size: 2em; font-weight: 700; margin: 0;'>{gano_by_estate['AME']:.1f}%</p>
-                            <p style='color: #9ca3af; margin: 5px 0 0 0;'>AME</p>
-                        </div>
-                        <div style='text-align: center;'>
-                            <p style='color: #ea580c; font-size: 2em; font-weight: 700; margin: 0;'>{gano_by_estate['OLE']:.1f}%</p>
-                            <p style='color: #9ca3af; margin: 5px 0 0 0;'>OLE</p>
-                        </div>
-                        <div style='text-align: center;'>
-                            <p style='color: #f59e0b; font-size: 2em; font-weight: 700; margin: 0;'>{gano_by_estate['DBE']:.1f}%</p>
-                            <p style='color: #9ca3af; margin: 5px 0 0 0;'>DBE</p>
-                        </div>
-                    </div>
-                    <p style='color: #6b7280; font-size: 0.9em; text-align: center; margin: 15px 0 0 0;'>
-                        ⚠️ Based on 2025 field survey data | Higher % indicates greater disease pressure
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                # Show message for years without ganoderma data
-                st.info(f"ℹ️ Ganoderma survey data not available for year {selected_yr}. Survey conducted in 2025 only.")
     
     st.markdown("---")
+
 
 # ============================================================================
 # SUPPORTING METRICS (4 columns)
@@ -1005,61 +857,7 @@ with col4:
 st.markdown("---")
 
 # ============================================================================
-# SECTION 1: PRODUCTION GAP WATERFALL
-# ============================================================================
-st.header("💧 Production Gap Analysis - Waterfall")
-
-# Calculate by estate
-gap_by_estate = df_filtered.groupby('estate').agg({
-    'real_ton': 'sum',
-    'potensi_ton': 'sum'
-}).reset_index()
-gap_by_estate['gap'] = gap_by_estate['real_ton'] - gap_by_estate['potensi_ton']
-
-# Create waterfall data
-waterfall_data = []
-waterfall_data.append({
-    'label': 'Target',
-    'value': total_production_target,
-    'type': 'total'
-})
-
-for _, row in gap_by_estate.iterrows():
-    waterfall_data.append({
-        'label': f"{row['estate']} Gap",
-        'value': row['gap'],
-        'type': 'relative'
-    })
-
-waterfall_data.append({
-    'label': 'Actual Achievement',
-    'value': total_production_actual,
-    'type': 'total'
-})
-
-# Create waterfall chart
-fig_waterfall = go.Figure(go.Waterfall(
-    name="Production",
-    orientation="v",
-    measure=[d['type'] for d in waterfall_data],
-    x=[d['label'] for d in waterfall_data],
-    y=[d['value'] for d in waterfall_data],
-    connector={"line": {"color": "rgb(63, 63, 63)"}},
-    decreasing={"marker": {"color": "#EF4444"}},
-    increasing={"marker": {"color": "#10B981"}},
-    totals={"marker": {"color": "#3B82F6"}}
-))
-
-fig_waterfall.update_layout(
-    title=f"Where Are We Losing Production? ({year_label})",
-    showlegend=False,
-    height=400
-)
-
-st.plotly_chart(fig_waterfall, use_container_width=True)
-
-# ============================================================================
-# SECTION 2: ESTATE PERFORMANCE HEATMAP
+# ESTATE PERFORMANCE HEATMAP
 # ============================================================================
 st.header("🔥 Estate Performance Heatmap (2023-2025)")
 

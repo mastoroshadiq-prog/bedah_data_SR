@@ -1,0 +1,60 @@
+﻿================================================================================
+MISSING BLOCKS IN SUPABASE - AME 2023
+================================================================================
+
+MISSING BLOCKS: 7
+================================================================================
+
+Blocks in Excel but NOT in Supabase:
+
+Block               Divisi Realisasi (Ton)   Potensi (Ton)
+--------------------------------------------------------------------------------
+A001A               AME001          181.76          175.17
+A002A               AME001          464.79          539.51
+A006B               AME001            0.00            0.00
+A007B               AME001            0.00            0.00
+B007E               AME001            0.00            0.00
+B009H               AME001            0.00            0.00
+C006A               AME001          587.74          658.04
+--------------------------------------------------------------------------------
+TOTAL                             1,234.29        1,372.73
+
+================================================================================
+IMPACT OF MISSING BLOCKS:
+================================================================================
+
+Production lost due to missing blocks:
+  Actual: 1,234.29 Ton
+  Target: 1,372.73 Ton
+
+Percentage of total Excel data:
+  Actual: 2.88%
+  Target: 2.67%
+
+================================================================================
+CHECK: Do these blocks exist in blocks table?
+================================================================================
+  A001A: EXISTS in blocks table (Estate: AME)
+  A002A: EXISTS in blocks table (Estate: AME)
+  A006B: NOT in blocks table at all!
+  A007B: NOT in blocks table at all!
+  B007E: NOT in blocks table at all!
+  B009H: NOT in blocks table at all!
+  C006A: EXISTS in blocks table (Estate: AME)
+
+================================================================================
+RECOMMENDATION:
+================================================================================
+
+4 blocks need to be ADDED to blocks table first:
+  - A006B
+  - A007B
+  - B007E
+  - B009H
+
+3 blocks exist but missing 2023 production data:
+  - A001A: Need to INSERT (181.76 Ton actual)
+  - A002A: Need to INSERT (464.79 Ton actual)
+  - C006A: Need to INSERT (587.74 Ton actual)
+
+DONE
